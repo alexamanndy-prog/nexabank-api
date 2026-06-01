@@ -213,7 +213,6 @@ export class AdminService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.userModel.create({
     ...dto,
-    passwordHash,
     status:        dto.skipEmailVerification ? UserStatus.ACTIVE : UserStatus.PENDING,
     emailVerified: dto.skipEmailVerification ?? false,
     role:          dto.role ?? UserRole.USER,
