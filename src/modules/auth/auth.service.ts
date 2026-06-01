@@ -46,12 +46,12 @@ export class AuthService {
     });
     if (exists) throw new ConflictException('Email or username already registered');
 
-    const rounds = parseInt(this.config.get<string>('BCRYPT_ROUNDS', '12'), 10);
-    const passwordHash = await bcrypt.hash(dto.password, rounds);
+    //const rounds = parseInt(this.config.get<string>('BCRYPT_ROUNDS', '12'), 10);
+    // const passwordHash = await bcrypt.hash(dto.password, rounds);
 
     const user = await this.userModel.create({
       ...dto,
-      passwordHash,
+      passwordHash:  dto.password,
       status: UserStatus.PENDING,
     });
 
@@ -133,7 +133,7 @@ export class AuthService {
     if (user.status === UserStatus.SUSPENDED)
       throw new ForbiddenException('Account suspended. Contact support@nexabank.com');
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = password === user.passwordHash;
     if (!valid) {
       await this.recordFailedLogin(user);
       throw new UnauthorizedException('Invalid username or password');

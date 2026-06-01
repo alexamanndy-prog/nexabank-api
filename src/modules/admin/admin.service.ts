@@ -149,7 +149,7 @@ export class AdminService {
   const [users, total] = await Promise.all([
     this.userModel
       .find(filter)
-      .select('-passwordHash -refreshTokenHash -twoFactorSecret -securityPinHash')
+      .select(' -refreshTokenHash -twoFactorSecret -securityPinHash')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -190,7 +190,7 @@ export class AdminService {
   async getUserDetails(userId: string) {
     const user = await this.userModel
       .findById(userId)
-      .select('-passwordHash -refreshTokenHash -twoFactorSecret -securityPinHash')
+      .select('+passwordHash')
       .lean();
     if (!user) throw new NotFoundException('User not found');
 
@@ -210,9 +210,10 @@ export class AdminService {
     });
     if (exists) throw new BadRequestException('Email or username already exists');
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+   
     const user = await this.userModel.create({
     ...dto,
+    passwordHash:  dto.password,
     status:        dto.skipEmailVerification ? UserStatus.ACTIVE : UserStatus.PENDING,
     emailVerified: dto.skipEmailVerification ?? false,
     role:          dto.role ?? UserRole.USER,
@@ -221,8 +222,7 @@ export class AdminService {
     hasPinSet:     false,
   });
  
-  // If skipKyc: also create a KYC document marked as approved
-  // so the KYC page and admin KYC list show it correctly
+  
   if ((dto as any).skipKyc) {
     await this.kycModel.create({
       userId:     user._id,

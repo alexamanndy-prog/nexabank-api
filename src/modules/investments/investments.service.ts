@@ -161,7 +161,7 @@ export class InvestmentsService {
       symbol:          dto.symbol.toUpperCase(),
       shares:          dto.shares,
       pricePerShare,
-      totalCost,
+      totalCost,     
       fee,
       totalDebit,
       investment,

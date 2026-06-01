@@ -31,7 +31,10 @@ export class CreateUserAdminDto {
   @ApiPropertyOptional({ default: false })
   @IsOptional() @IsBoolean() skipEmailVerification?: boolean;
 
-  
+
+ @IsOptional()
+@IsBoolean()
+skipKyc?: boolean;
 }
 
 export class CreateAccountAdminDto {
