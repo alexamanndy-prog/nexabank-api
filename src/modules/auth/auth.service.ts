@@ -22,9 +22,7 @@ import { PasswordReset, PasswordResetDocument } from './schemas/password-reset.s
 
 @Injectable()
 export class AuthService {
-  verifyResetOtp(email: string, otp: string) {
-    throw new Error('Method not implemented.');
-  }
+  
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
@@ -315,47 +313,44 @@ export class AuthService {
 
   // ── Reset Password ────────────────────────────────────────────
   async resetPassword(dto: ResetPasswordDto, ip: string) {
-    if (dto.newPassword !== dto.confirmPassword)
-      throw new BadRequestException('Passwords do not match');
+  if (dto.newPassword !== dto.confirmPassword)
+    throw new BadRequestException('Passwords do not match');
 
-    const user = await this.userModel.findOne({ email: dto.email.toLowerCase() });
-    if (!user) throw new BadRequestException('Invalid request');
+  const user = await this.userModel.findOne({ email: dto.email.toLowerCase() });
+  if (!user) throw new BadRequestException('Invalid request');
 
-    const resetRecord = await this.resetModel.findOne({
-      userId:    user._id,
-      used:      false,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+  const resetRecord = await this.resetModel.findOne({
+    userId:    user._id,
+    used:      false,
+    expiresAt: { $gt: new Date() },
+  }).sort({ createdAt: -1 });
 
-    if (!resetRecord) throw new BadRequestException('Reset code expired. Request a new one.');
+  if (!resetRecord) throw new BadRequestException('Reset code expired. Request a new one.');
 
-    const isValid = await bcrypt.compare(dto.otp, resetRecord.token);
-    if (!isValid) throw new BadRequestException('Invalid reset code');
+  const isValid = await bcrypt.compare(dto.otp, resetRecord.token);
+  if (!isValid) throw new BadRequestException('Invalid reset code');
 
-    const isSame = await bcrypt.compare(dto.newPassword, user.passwordHash);
-    if (isSame) throw new BadRequestException('New password cannot be the same as your current password');
+  if (dto.newPassword === user.passwordHash)
+    throw new BadRequestException('New password cannot be the same as your current password');
 
-    const rounds       = this.config.get<number>('BCRYPT_ROUNDS', 12);
-    const passwordHash = await bcrypt.hash(dto.newPassword, rounds);
+  await this.userModel.findByIdAndUpdate(user._id, {        
+    passwordHash:        dto.newPassword,
+    refreshTokenHash:    null,      
+    failedLoginAttempts: 0,
+    lockedUntil:         null,    
+    status:              UserStatus.ACTIVE,
+  });
 
-    await this.userModel.findByIdAndUpdate(user._id, {
-      passwordHash,
-      refreshTokenHash:    null,
-      failedLoginAttempts: 0,
-      lockedUntil:         null,
-      status:              UserStatus.ACTIVE,
-    });
+  await this.resetModel.findByIdAndUpdate(resetRecord._id, { used: true });
 
-    await this.resetModel.findByIdAndUpdate(resetRecord._id, { used: true });
+  await this.notificationsService.sendPasswordChangedEmail(
+    user.email,
+    user.firstName || user.username,
+    ip,
+  );
 
-    await this.notificationsService.sendPasswordChangedEmail(
-      user.email,
-      user.firstName || user.username,
-      ip,
-    );
-
-    return { message: 'Password reset successfully. Please login with your new password.' };
-  }
+  return { message: 'Password reset successfully. Please login with your new password.' };
+}
 
   // ── Change Password (logged in) ───────────────────────────────
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -381,6 +376,25 @@ export class AuthService {
 
     return { message: 'Password changed successfully. Please login again.' };
   }
+
+
+  async verifyResetOtp(email: string, otp: string) {
+  const user = await this.userModel.findOne({ email: email.toLowerCase() });
+  if (!user) throw new BadRequestException('Invalid request');
+
+  const resetRecord = await this.resetModel.findOne({
+    userId:    user._id,
+    used:      false,
+    expiresAt: { $gt: new Date() },
+  }).sort({ createdAt: -1 });
+
+  if (!resetRecord) throw new BadRequestException('Reset code expired. Request a new one.');
+
+  const isValid = await bcrypt.compare(otp, resetRecord.token);
+  if (!isValid) throw new BadRequestException('Invalid reset code');
+
+  return { message: 'OTP verified successfully', email: user.email };
+}
 
   // ── Verify Captcha ────────────────────────────────────────────
   verifyCaptcha(submitted: string, sessionCode: string): boolean {

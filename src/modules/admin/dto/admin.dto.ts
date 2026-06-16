@@ -307,4 +307,8 @@ export class AdminQueryDto {
 
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(1) page?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(1) @Max(100) limit?: number;
+
+  @IsOptional()
+  @IsString()
+  orderStatus?: string;
 }

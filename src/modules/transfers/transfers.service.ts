@@ -14,7 +14,7 @@ import { OtpService } from '../otp/otp.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { generateReference } from '../../common/utils/generate-ref.util';
-
+   
 @Injectable()
 export class TransfersService {
   private readonly logger = new Logger(TransfersService.name);
@@ -209,8 +209,6 @@ export class TransfersService {
       await session.commitTransaction();
       this.logger.log(`[TRANSFERS] Intrabank committed — ref: ${ref}, debitTx._id: ${(debitTx as any)._id}`);
 
-      // Generate receipt and save URL back to DB
-      this.logger.log(`[TRANSFERS] Generating receipt for ${ref}...`);
       const receiptUrl = await this.receiptsService
         .generatePdfReceipt(debitTx, dto.userTimezone)
         .catch((err: any) => {
@@ -218,16 +216,9 @@ export class TransfersService {
           return '';
         });
 
-      this.logger.log(`[TRANSFERS] Receipt result for ${ref}: "${receiptUrl || 'EMPTY/FAILED'}"`);
-
       if (receiptUrl) {
-        await this.transactionModel.findByIdAndUpdate(
-          (debitTx as any)._id,
-          { receiptUrl },
-        );
+        await this.transactionModel.findByIdAndUpdate((debitTx as any)._id, { receiptUrl });
         this.logger.log(`[TRANSFERS] receiptUrl saved to DB for tx ${(debitTx as any)._id}`);
-      } else {
-        this.logger.warn(`[TRANSFERS] No receiptUrl generated for ${ref} — skipping DB save`);
       }
 
       this.notificationsService.sendTransferAlert(user.email, {
@@ -252,9 +243,8 @@ export class TransfersService {
     }
   }
 
-  // ── Confirm Interbank (ACH) ───────────────────────────────────
-  // ACH transfers auto-complete after 5–48 hours via a scheduled
-  // setTimeout. This simulates real ACH settlement windows.
+  // ── Confirm Interbank (ACH) — instant settlement ──────────────
+  // ACH transfers complete immediately (status → completed right away).
   async confirmInterbank(userId: string, dto: {
     fromAccountId:   string;
     toAccountNumber: string;
@@ -293,7 +283,8 @@ export class TransfersService {
         accountId:              sender._id,
         referenceNumber:        ref,
         type:                   TransactionType.INTERBANK_TRANSFER,
-        status:                 TransactionStatus.PROCESSING,   // starts as processing
+        // ✅ Instant — completed immediately, no processing delay
+        status:                 TransactionStatus.COMPLETED,
         direction:              TransactionDirection.DEBIT,
         amount:                 dto.amount,
         fee,
@@ -306,13 +297,12 @@ export class TransfersService {
         recipientBankName:      dto.toBankName,
         recipientName:          dto.recipientName,
         balanceAfter:           sender.balance,
+        processedAt:            new Date(),
       }], { session });
 
       await session.commitTransaction();
-      this.logger.log(`[TRANSFERS] Interbank committed — ref: ${ref}, tx._id: ${(tx as any)._id}`);
+      this.logger.log(`[TRANSFERS] ACH committed (instant) — ref: ${ref}, tx._id: ${(tx as any)._id}`);
 
-      // Generate receipt (processing state)
-      this.logger.log(`[TRANSFERS] Generating receipt for ${ref}...`);
       const receiptUrl = await this.receiptsService
         .generatePdfReceipt(tx, dto.userTimezone)
         .catch((err: any) => {
@@ -320,16 +310,9 @@ export class TransfersService {
           return '';
         });
 
-      this.logger.log(`[TRANSFERS] Receipt result for ${ref}: "${receiptUrl || 'EMPTY/FAILED'}"`);
-
       if (receiptUrl) {
-        await this.transactionModel.findByIdAndUpdate(
-          (tx as any)._id,
-          { receiptUrl },
-        );
+        await this.transactionModel.findByIdAndUpdate((tx as any)._id, { receiptUrl });
         this.logger.log(`[TRANSFERS] receiptUrl saved to DB for tx ${(tx as any)._id}`);
-      } else {
-        this.logger.warn(`[TRANSFERS] No receiptUrl for ${ref} — skipping DB save`);
       }
 
       this.notificationsService.sendTransferAlert(user.email, {
@@ -344,21 +327,11 @@ export class TransfersService {
         recipientBankName:      dto.toBankName,
       }).catch(() => null);
 
-      // ── ACH Auto-Settlement ───────────────────────────────────
-      // Schedule status → completed between 5 hrs and 48 hrs
-      // Random window: 5hr min, 48hr max, weighted toward 24hr
-      this.scheduleAchSettlement(
-        String((tx as any)._id),
-        ref,
-        user.email,
-        dto.amount,
-      );
-
       return {
-        success: true,
+        success:         true,
         referenceNumber: ref,
         receiptUrl,
-        note: 'ACH transfer is processing. Funds typically settle within 1–2 business days.',
+        note:            'ACH transfer completed successfully.',
       };
 
     } catch (err) {
@@ -369,65 +342,7 @@ export class TransfersService {
     }
   }
 
-  // ── ACH Auto-Settlement (private) ────────────────────────────
-  // Schedules a setTimeout that marks the transaction as completed.
-  // Min: 5 hours, Max: 48 hours, randomised so it feels real.
-  private scheduleAchSettlement(
-    txId:    string,
-    ref:     string,
-    email:   string,
-    amount:  number,
-  ): void {
-    // Random delay between 5 hours and 48 hours in milliseconds
-    const MIN_MS = 5  * 60 * 60 * 1000;   // 5 hours
-    const MAX_MS = 48 * 60 * 60 * 1000;   // 48 hours
-    const delayMs = Math.floor(Math.random() * (MAX_MS - MIN_MS + 1)) + MIN_MS;
-
-    // Log the scheduled time for observability
-    const settlesAt = new Date(Date.now() + delayMs);
-    console.log(
-      `[ACH] ${ref} scheduled to settle at ${settlesAt.toISOString()} ` +
-      `(in ${(delayMs / 3600000).toFixed(1)}h)`,
-    );
-
-    // Fire-and-forget: setTimeout runs in Node's event loop
-    // The process must stay running for this to fire (it will in prod)
-    setTimeout(async () => {
-      try {
-        const updated = await this.transactionModel.findByIdAndUpdate(
-          txId,
-          {
-            status:      TransactionStatus.COMPLETED,
-            processedAt: new Date(),
-          },
-          { new: true },
-        );
-
-        if (!updated) {
-          console.warn(`[ACH] Settlement skipped — tx ${txId} not found`);
-          return;
-        }
-
-        console.log(`[ACH] ${ref} settled successfully`);
-
-        // Notify user that funds have been sent
-        this.notificationsService.sendTransferAlert(email, {
-          direction: 'debit',
-          amount,
-          fee:       0,
-          ref,
-          type:      'interbank_transfer',
-          balance:   updated.balanceAfter ?? 0,
-          description: `ACH transfer ${ref} has completed successfully.`,
-        }).catch(() => null);
-
-      } catch (err) {
-        console.error(`[ACH] Settlement failed for ${ref}:`, err);
-      }
-    }, delayMs);
-  }
-
-  // ── Confirm International Wire ────────────────────────────────
+  // ── Confirm International Wire — 1 or 2 business days (random) ──
   async confirmInternational(userId: string, dto: {
     fromAccountId:    string;
     recipientName:    string;
@@ -484,10 +399,8 @@ export class TransfersService {
       }], { session });
 
       await session.commitTransaction();
-      this.logger.log(`[TRANSFERS] International committed — ref: ${ref}, tx._id: ${(tx as any)._id}`);
+      this.logger.log(`[TRANSFERS] Wire committed — ref: ${ref}, tx._id: ${(tx as any)._id}`);
 
-      // Generate receipt and save URL back to DB
-      this.logger.log(`[TRANSFERS] Generating receipt for ${ref}...`);
       const receiptUrl = await this.receiptsService
         .generatePdfReceipt(tx, dto.userTimezone)
         .catch((err: any) => {
@@ -495,35 +408,36 @@ export class TransfersService {
           return '';
         });
 
-      this.logger.log(`[TRANSFERS] Receipt result for ${ref}: "${receiptUrl || 'EMPTY/FAILED'}"`);
-
       if (receiptUrl) {
-        await this.transactionModel.findByIdAndUpdate(
-          (tx as any)._id,
-          { receiptUrl },
-        );
+        await this.transactionModel.findByIdAndUpdate((tx as any)._id, { receiptUrl });
         this.logger.log(`[TRANSFERS] receiptUrl saved to DB for tx ${(tx as any)._id}`);
-      } else {
-        this.logger.warn(`[TRANSFERS] No receiptUrl for ${ref} — skipping DB save`);
       }
 
       this.notificationsService.sendTransferAlert(user.email, {
-        direction:        'debit',
-        amount:           dto.amount,
+        direction:         'debit',
+        amount:            dto.amount,
         fee,
         ref,
-        type:             'international_transfer',
-        balance:          sender.balance,
-        recipientName:    dto.recipientName,
-        recipientBankName:dto.recipientBank,
-        recipientCountry: dto.recipientCountry,
+        type:              'international_transfer',
+        balance:           sender.balance,
+        recipientName:     dto.recipientName,
+        recipientBankName: dto.recipientBank,
+        recipientCountry:  dto.recipientCountry,
       }).catch(() => null);
+
+      // ── Wire Auto-Settlement: randomly 1 or 2 business days ──
+      this.scheduleWireSettlement(
+        String((tx as any)._id),
+        ref,
+        user.email,
+        dto.amount,
+      );
 
       return {
         success:         true,
         referenceNumber: ref,
         receiptUrl,
-        note:            'International wires process in 2–5 business days.',
+        note:            'International wire is processing. Funds typically arrive within 1–2 business days.',
       };
 
     } catch (err) {
@@ -532,5 +446,65 @@ export class TransfersService {
     } finally {
       session.endSession();
     }
+  }
+
+  // ── Wire Settlement: randomly 1 or 2 business days ───────────
+  // 1 business day  = random window between 20h and 28h
+  // 2 business days = random window between 44h and 52h
+  // This makes the settlement time feel natural and unpredictable.
+  private scheduleWireSettlement(
+    txId:   string,
+    ref:    string,
+    email:  string,
+    amount: number,
+  ): void {
+    // Randomly pick 1 or 2 business days (50/50)
+    const businessDays = Math.random() < 0.5 ? 1 : 2;
+
+    // 1 day  → between 20h and 28h (centered on 24h)
+    // 2 days → between 44h and 52h (centered on 48h)
+    const centerMs  = businessDays * 24 * 60 * 60 * 1000;
+    const jitterMs  = 4 * 60 * 60 * 1000;  // ±4 hours of randomness
+    const delayMs   = centerMs + Math.floor((Math.random() * 2 - 1) * jitterMs);
+
+    const settlesAt = new Date(Date.now() + delayMs);
+    this.logger.log(
+      `[WIRE] ${ref} scheduled to settle in ${businessDays} business day(s) ` +
+      `at ${settlesAt.toISOString()} (${(delayMs / 3600000).toFixed(1)}h from now)`,
+    );
+
+    setTimeout(async () => {
+      try {
+        const updated = await this.transactionModel.findByIdAndUpdate(
+          txId,
+          {
+            status:      TransactionStatus.COMPLETED,
+            processedAt: new Date(),
+          },
+          { new: true },
+        );
+
+        if (!updated) {
+          this.logger.warn(`[WIRE] Settlement skipped — tx ${txId} not found`);
+          return;
+        }
+
+        this.logger.log(`[WIRE] ${ref} settled after ${businessDays} business day(s)`);
+
+        // Notify user that the wire has completed
+        this.notificationsService.sendTransferAlert(email, {
+          direction:   'debit',
+          amount,
+          fee:         0,
+          ref,
+          type:        'international_transfer',
+          balance:     updated.balanceAfter ?? 0,
+          description: `International wire ${ref} has been delivered successfully.`,
+        }).catch(() => null);
+
+      } catch (err) {
+        this.logger.error(`[WIRE] Settlement failed for ${ref}:`, err);
+      }
+    }, delayMs);
   }
 }
