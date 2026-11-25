@@ -10,7 +10,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       const allowed = [
         'http://localhost:3000',
         'http://localhost:3001',
@@ -24,7 +27,7 @@ async function bootstrap() {
       if (allowed.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
       } else {
-        callback(null, true); 
+        callback(null, true);
       }
     },
     credentials: true,
@@ -41,7 +44,6 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
   });
 
- 
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
