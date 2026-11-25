@@ -17,7 +17,7 @@ async function bootstrap() {
       const allowed = [
         'http://localhost:3000',
         'http://localhost:3001',
-        'https://securesphere-web.vercel.app',
+        'https://nexabank-web.vercel.app',
         process.env.FRONTEND_URL,
       ].filter(Boolean) as string[];
 
