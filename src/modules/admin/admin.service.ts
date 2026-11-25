@@ -49,7 +49,7 @@ export class AdminService {
     @InjectModel(CryptoInvestment.name) private cryptoInvestModel: Model<CryptoInvestmentDocument>,
     private readonly notificationsService: NotificationsService,
     private readonly receiptsService:      ReceiptsService,
-    private readonly config:               ConfigService,
+    private readonly config:               ConfigService,        
   ) {}
 
   // ══════════════════════════════════════════════════════════════
@@ -149,7 +149,7 @@ export class AdminService {
   const [users, total] = await Promise.all([
     this.userModel
       .find(filter)
-      .select('-passwordHash -refreshTokenHash -twoFactorSecret -securityPinHash')
+      .select(' -refreshTokenHash -twoFactorSecret -securityPinHash')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -190,7 +190,7 @@ export class AdminService {
   async getUserDetails(userId: string) {
     const user = await this.userModel
       .findById(userId)
-      .select('-passwordHash -refreshTokenHash -twoFactorSecret -securityPinHash')
+      .select('+passwordHash')
       .lean();
     if (!user) throw new NotFoundException('User not found');
 
@@ -210,10 +210,10 @@ export class AdminService {
     });
     if (exists) throw new BadRequestException('Email or username already exists');
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+   
     const user = await this.userModel.create({
     ...dto,
-    passwordHash,
+    passwordHash:  dto.password,
     status:        dto.skipEmailVerification ? UserStatus.ACTIVE : UserStatus.PENDING,
     emailVerified: dto.skipEmailVerification ?? false,
     role:          dto.role ?? UserRole.USER,
@@ -222,8 +222,7 @@ export class AdminService {
     hasPinSet:     false,
   });
  
-  // If skipKyc: also create a KYC document marked as approved
-  // so the KYC page and admin KYC list show it correctly
+  
   if ((dto as any).skipKyc) {
     await this.kycModel.create({
       userId:     user._id,
@@ -458,7 +457,21 @@ export class AdminService {
     adminNote:   `Admin ${dto.type}: ${dto.reason}`,
   };
  
-  await this.txModel.create(txPayload);
+ 
+
+ const createdTx = await this.txModel.create(txPayload);
+
+// Generate receipt
+const receiptUrl = await this.receiptsService
+  .generatePdfReceipt(createdTx)
+  .catch(() => '');
+if (receiptUrl) {
+  await this.txModel.updateOne(
+    { _id: createdTx._id },
+    { $set: { receiptUrl } },
+    { timestamps: false },
+  );
+}
  
   await this.log(
     admin,
@@ -493,6 +506,7 @@ async adminIntrabankTransfer(
     amount:          number;
     description?:    string;
     recipientName?:  string;
+    processedAt?:    string;
   },
   admin: UserDocument,
 ) {
@@ -500,105 +514,133 @@ async adminIntrabankTransfer(
   if (!sender) throw new NotFoundException('Source account not found');
   if (sender.status === AccountStatus.FROZEN) throw new BadRequestException('Source account is frozen');
   if (sender.availableBalance < dto.amount) throw new BadRequestException('Insufficient funds');
- 
+
   const recipient = await this.accountModel.findOne({ accountNumber: dto.toAccountNumber });
   if (!recipient) throw new NotFoundException('Recipient account not found');
   if (recipient.accountNumber === sender.accountNumber) throw new BadRequestException('Cannot transfer to the same account');
- 
+
   sender.balance           -= dto.amount; sender.availableBalance -= dto.amount; sender.totalWithdrawn += dto.amount;
   recipient.balance += dto.amount; recipient.availableBalance += dto.amount; recipient.totalDeposited += dto.amount;
   await sender.save(); await recipient.save();
- 
+
   const ref = generateReference('NXB');
- 
-  // Debit TX — shows in sender's transaction history as a regular transfer (no "admin" in description)
-  await this.txModel.create([{
-    userId: sender.userId, accountId: sender._id, referenceNumber: ref,
-    type: TransactionType.INTRABANK_TRANSFER, status: TransactionStatus.COMPLETED, direction: TransactionDirection.DEBIT,
-    amount: dto.amount, fee: 0, currency: sender.currency || 'USD',
-    description: dto.description ?? 'Transfer',
-    senderAccountNumber: sender.accountNumber, recipientAccountNumber: recipient.accountNumber,
-    recipientName: dto.recipientName ?? 'Account Holder', balanceAfter: sender.balance, processedAt: new Date(),
-    metadata: { adminAction: true, adminId: admin._id },
-  }]);
- 
-  // Credit TX — shows in recipient's transaction history
-  await this.txModel.create([{
-    userId: recipient.userId, accountId: recipient._id, referenceNumber: `${ref}-CR`,
-    type: TransactionType.INTRABANK_TRANSFER, status: TransactionStatus.COMPLETED, direction: TransactionDirection.CREDIT,
-    amount: dto.amount, fee: 0, currency: recipient.currency || 'USD',
-    description: `Transfer from ${sender.accountNumber}`,
-    senderAccountNumber: sender.accountNumber, recipientAccountNumber: recipient.accountNumber,
-    balanceAfter: recipient.balance, processedAt: new Date(),
-    metadata: { adminAction: true, adminId: admin._id },
-  }]);
- 
+  const txDate = dto.processedAt ? new Date(dto.processedAt) : new Date();
+
+ const [debitTx] = await this.txModel.create([{
+  userId: sender.userId, accountId: sender._id, referenceNumber: ref,
+  type: TransactionType.INTRABANK_TRANSFER, status: TransactionStatus.COMPLETED, direction: TransactionDirection.DEBIT,
+  amount: dto.amount, fee: 0, currency: sender.currency || 'USD',
+  description: dto.description ?? 'Transfer',
+  senderAccountNumber: sender.accountNumber, recipientAccountNumber: recipient.accountNumber,
+  recipientName: dto.recipientName ?? 'Account Holder', balanceAfter: sender.balance,
+  processedAt: txDate, createdAt: txDate,
+  metadata: { adminAction: true, adminId: admin._id },
+} as any]);
+
+const [creditTx] = await this.txModel.create([{
+  userId: recipient.userId, accountId: recipient._id, referenceNumber: `${ref}-CR`,
+  type: TransactionType.INTRABANK_TRANSFER, status: TransactionStatus.COMPLETED, direction: TransactionDirection.CREDIT,
+  amount: dto.amount, fee: 0, currency: recipient.currency || 'USD',
+  description: `Transfer from ${sender.accountNumber}`,
+  senderAccountNumber: sender.accountNumber, recipientAccountNumber: recipient.accountNumber,
+  balanceAfter: recipient.balance,
+  processedAt: txDate, createdAt: txDate,
+  metadata: { adminAction: true, adminId: admin._id },
+} as any]);
+
+  const [debitReceiptUrl, creditReceiptUrl] = await Promise.all([
+    this.receiptsService.generatePdfReceipt(debitTx).catch(() => ''),
+    this.receiptsService.generatePdfReceipt(creditTx).catch(() => ''),
+  ]);
+
+  await Promise.all([
+    debitReceiptUrl && this.txModel.updateOne({ _id: debitTx._id }, { $set: { receiptUrl: debitReceiptUrl } }, { timestamps: false }),
+    creditReceiptUrl && this.txModel.updateOne({ _id: creditTx._id }, { $set: { receiptUrl: creditReceiptUrl } }, { timestamps: false }),
+  ]);
+
   await this.log(admin, 'ADMIN_INTRABANK_TRANSFER', 'account', sender._id as Types.ObjectId, {}, { amount: dto.amount, from: sender.accountNumber, to: dto.toAccountNumber, ref });
   return { success: true, referenceNumber: ref, amount: dto.amount };
 }
 
 async adminInterbankTransfer(
-  dto: { fromAccountId: string; toAccountNumber: string; toRoutingNumber: string; toBankName: string; recipientName: string; amount: number; description?: string; },
+  dto: { fromAccountId: string; toAccountNumber: string; toRoutingNumber: string; toBankName: string; recipientName: string; amount: number; description?: string; processedAt?: string; },
   admin: UserDocument,
 ) {
   const sender = await this.accountModel.findById(dto.fromAccountId);
   if (!sender) throw new NotFoundException('Source account not found');
   if (sender.status === AccountStatus.FROZEN) throw new BadRequestException('Account is frozen');
- 
+
   const fee = dto.amount > 1000 ? 5 : 2.5;
   const total = dto.amount + fee;
   if (sender.availableBalance < total) throw new BadRequestException('Insufficient funds');
- 
+
   sender.balance -= total; sender.availableBalance -= total; sender.totalWithdrawn += total;
   await sender.save();
- 
+
   const ref = generateReference('ACH');
-  await this.txModel.create({
-    userId: sender.userId, accountId: sender._id, referenceNumber: ref,
-    type: TransactionType.INTERBANK_TRANSFER, status: TransactionStatus.PROCESSING, direction: TransactionDirection.DEBIT,
-    amount: dto.amount, fee, currency: sender.currency || 'USD',
-    description: dto.description ?? 'ACH Transfer',
-    senderAccountNumber: sender.accountNumber, senderRoutingNumber: '021000021',
-    recipientAccountNumber: dto.toAccountNumber, recipientRoutingNumber: dto.toRoutingNumber,
-    recipientBankName: dto.toBankName, recipientName: dto.recipientName,
-    balanceAfter: sender.balance, metadata: { adminAction: true, adminId: admin._id },
-  });
- 
+  const txDate = dto.processedAt ? new Date(dto.processedAt) : new Date();
+
+  const tx = await this.txModel.create({
+  userId: sender.userId, accountId: sender._id, referenceNumber: ref,
+  type: TransactionType.INTERBANK_TRANSFER, status: TransactionStatus.COMPLETED, direction: TransactionDirection.DEBIT,
+  amount: dto.amount, fee, currency: sender.currency || 'USD',
+  description: dto.description ?? 'ACH Transfer',
+  senderAccountNumber: sender.accountNumber, senderRoutingNumber: '021000021',
+  recipientAccountNumber: dto.toAccountNumber, recipientRoutingNumber: dto.toRoutingNumber,
+  recipientBankName: dto.toBankName, recipientName: dto.recipientName,
+  balanceAfter: sender.balance,
+  processedAt: txDate, createdAt: txDate,
+  metadata: { adminAction: true, adminId: admin._id },
+} as any);
+
+  const receiptUrl = await this.receiptsService.generatePdfReceipt(tx).catch(() => '');
+  if (receiptUrl) {
+    await this.txModel.updateOne({ _id: tx._id }, { $set: { receiptUrl } }, { timestamps: false });
+  }
+
   await this.log(admin, 'ADMIN_ACH_TRANSFER', 'account', sender._id as Types.ObjectId, {}, { amount: dto.amount, fee, ref });
-  return { success: true, referenceNumber: ref, amount: dto.amount, fee, note: 'ACH settles in 1–2 business days' };
+  return { success: true, referenceNumber: ref, amount: dto.amount, fee };
 }
- 
 
 
 async adminInternationalTransfer(
-  dto: { fromAccountId: string; recipientName: string; recipientBank: string; swiftCode: string; ibanNumber: string; recipientCountry: string; amount: number; currency: string; description?: string; },
+  dto: { fromAccountId: string; recipientName: string; recipientBank: string; swiftCode: string; ibanNumber: string; recipientCountry: string; amount: number; currency: string; description?: string; processedAt?: string; },
   admin: UserDocument,
 ) {
   const sender = await this.accountModel.findById(dto.fromAccountId);
   if (!sender) throw new NotFoundException('Source account not found');
   if (sender.status === AccountStatus.FROZEN) throw new BadRequestException('Account is frozen');
- 
+
   const fee = Math.min(dto.amount * 0.02, 50);
   const total = dto.amount + fee;
   if (sender.availableBalance < total) throw new BadRequestException('Insufficient funds');
- 
+
   sender.balance -= total; sender.availableBalance -= total; sender.totalWithdrawn += total;
   await sender.save();
- 
+
   const ref = generateReference('WIRE');
-  await this.txModel.create({
-    userId: sender.userId, accountId: sender._id, referenceNumber: ref,
-    type: TransactionType.INTERNATIONAL_TRANSFER, status: TransactionStatus.PROCESSING, direction: TransactionDirection.DEBIT,
-    amount: dto.amount, fee, currency: dto.currency || 'USD',
-    description: dto.description ?? 'International Wire Transfer',
-    senderAccountNumber: sender.accountNumber, recipientName: dto.recipientName,
-    recipientBankName: dto.recipientBank, recipientCountry: dto.recipientCountry,
-    swiftCode: dto.swiftCode, ibanNumber: dto.ibanNumber,
-    balanceAfter: sender.balance, metadata: { adminAction: true, adminId: admin._id },
-  });
- 
+  const txDate = dto.processedAt ? new Date(dto.processedAt) : new Date();
+
+  const tx = await this.txModel.create({
+  userId: sender.userId, accountId: sender._id, referenceNumber: ref,
+  type: TransactionType.INTERNATIONAL_TRANSFER, status: TransactionStatus.PROCESSING, direction: TransactionDirection.DEBIT,
+  amount: dto.amount, fee, currency: dto.currency || 'USD',
+  description: dto.description ?? 'International Wire Transfer',
+  senderAccountNumber: sender.accountNumber, recipientName: dto.recipientName,
+  recipientBankName: dto.recipientBank, recipientCountry: dto.recipientCountry,
+  swiftCode: dto.swiftCode, ibanNumber: dto.ibanNumber,
+  balanceAfter: sender.balance,
+  processedAt: txDate, createdAt: txDate,
+  metadata: { adminAction: true, adminId: admin._id },
+} as any);
+
+  const receiptUrl = await this.receiptsService.generatePdfReceipt(tx).catch(() => '');
+  if (receiptUrl) {
+    await this.txModel.updateOne({ _id: tx._id }, { $set: { receiptUrl } }, { timestamps: false });
+  }
+
   await this.log(admin, 'ADMIN_WIRE_TRANSFER', 'account', sender._id as Types.ObjectId, {}, { amount: dto.amount, fee, currency: dto.currency, ref });
-  return { success: true, referenceNumber: ref, amount: dto.amount, fee, note: 'Wire processes in 2–5 business days' };
+  return { success: true, referenceNumber: ref, amount: dto.amount, fee };
 }
 
 

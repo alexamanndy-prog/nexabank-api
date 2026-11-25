@@ -15,7 +15,7 @@ export class CreateUserAdminDto {
   @ApiProperty({ example: 'jane_doe' })
   @IsString() @IsNotEmpty() username: string;
 
-  @ApiProperty({ example: 'jane@nexabank.com' })
+  @ApiProperty({ example: 'jane@Securesphere.com' })
   @IsEmail() email: string;
 
   @ApiProperty({ example: 'SecurePass@123' })
@@ -31,7 +31,10 @@ export class CreateUserAdminDto {
   @ApiPropertyOptional({ default: false })
   @IsOptional() @IsBoolean() skipEmailVerification?: boolean;
 
-  
+
+ @IsOptional()
+@IsBoolean()
+skipKyc?: boolean;
 }
 
 export class CreateAccountAdminDto {
@@ -304,4 +307,8 @@ export class AdminQueryDto {
 
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(1) page?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(1) @Max(100) limit?: number;
+
+  @IsOptional()
+  @IsString()
+  orderStatus?: string;
 }

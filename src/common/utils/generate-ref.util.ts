@@ -10,7 +10,7 @@ export function generateAccountNumber(): string {
 }
 
 export function generateRoutingNumber(): string {
-  // NexaBank routing: 021000021 (example fixed)
+  // Securesphere routing: 021000021 (example fixed)
   return '021000021';
 }
 

@@ -63,7 +63,7 @@ export class KycService {
   private uploadFile(file: Express.Multer.File, publicId: string): Promise<[string, string]> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'nexabank/kyc', public_id: publicId, resource_type: 'image' },
+        { folder: 'Securesphere/kyc', public_id: publicId, resource_type: 'image' },
         (
                  err:    UploadApiErrorResponse | undefined,
                  result: UploadApiResponse    | undefined,

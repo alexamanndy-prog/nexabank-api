@@ -154,7 +154,7 @@ export class ReceiptsService {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>NexaBank Receipt — ${ref}</title>
+<title>Securesphere Receipt — ${ref}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#f1f5f9;color:#0f172a;padding:32px 16px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -187,7 +187,7 @@ export class ReceiptsService {
     <div class="header-row">
       <div class="logo">N</div>
       <div>
-        <div class="bank-name">NEXABANK</div>
+        <div class="bank-name">Securesphere</div>
         <div class="bank-sub">MEMBER FDIC &nbsp;·&nbsp; EQUAL HOUSING LENDER</div>
       </div>
     </div>
@@ -207,10 +207,10 @@ export class ReceiptsService {
     <table>${rowsHtml}</table>
   </div>
   <div class="footer">
-    <p>This is an official auto-generated receipt from NexaBank.</p>
-    <p>NexaBank, N.A. &nbsp;·&nbsp; 1 Financial Plaza, New York, NY 10005</p>
-    <p>support@nexabank.com &nbsp;·&nbsp; 1-800-NEXABANK</p>
-    <p>© ${new Date().getFullYear()} NexaBank. All rights reserved.</p>
+    <p>This is an official auto-generated receipt from Securesphere.</p>
+    <p>Securesphere, N.A. &nbsp;·&nbsp; 1 Financial Plaza, New York, NY 10005</p>
+    <p>support@Securesphere.com &nbsp;·&nbsp; 1-800-Securesphere</p>
+    <p>© ${new Date().getFullYear()} Securesphere. All rights reserved.</p>
     <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
   </div>
 </div>
@@ -219,7 +219,7 @@ export class ReceiptsService {
   }
 
   private async uploadToCloudinary(buffer: Buffer, referenceNumber: string): Promise<string> {
-    const publicId = `nexabank/receipts/${referenceNumber}`;
+    const publicId = `Securesphere/receipts/${referenceNumber}`;
     this.logger.log(`[RECEIPTS] Uploading — public_id: ${publicId}, size: ${buffer.length} bytes`);
 
     return new Promise((resolve, reject) => {

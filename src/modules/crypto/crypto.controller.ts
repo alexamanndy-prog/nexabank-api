@@ -40,7 +40,7 @@ export class CryptoController {
 
   // ── GET /crypto/addresses ─────────────────────────────────────
   @Get('addresses')
-  @ApiOperation({ summary: 'Active NexaBank crypto deposit addresses' })
+  @ApiOperation({ summary: 'Active Securesphere crypto deposit addresses' })
   async getActiveAddresses() {
     return this.cryptoAddrModel
       .find({ isActive: true })

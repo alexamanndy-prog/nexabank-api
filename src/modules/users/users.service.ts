@@ -45,7 +45,7 @@ export class UsersService {
       await cloudinary.uploader.destroy(user.profilePicturePublicId).catch(() => null);
     }
 
-    const [url, publicId] = await this.uploadToCloudinary(file, `nexabank/profiles/${userId}`);
+    const [url, publicId] = await this.uploadToCloudinary(file, `Securesphere/profiles/${userId}`);
     await this.userModel.findByIdAndUpdate(userId, { profilePictureUrl: url, profilePicturePublicId: publicId });
     return { profilePictureUrl: url };
   }
@@ -57,7 +57,7 @@ export class UsersService {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder:         'nexabank',
+          folder:         'Securesphere',
           public_id:      publicId,
           resource_type:  'image',
           transformation: [

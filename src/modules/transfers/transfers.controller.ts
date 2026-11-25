@@ -36,7 +36,7 @@ export class TransfersController {
 
   @Post('intrabank/confirm')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 2A — Confirm NexaBank-to-NexaBank transfer (OTP + PIN)' })
+  @ApiOperation({ summary: 'Step 2A — Confirm Securesphere-to-Securesphere transfer (OTP + PIN)' })
   confirmIntrabank(
     @CurrentUser() user: userSchema.UserDocument,
     @Body() dto: IntraBankTransferDto,

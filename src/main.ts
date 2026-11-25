@@ -17,7 +17,7 @@ async function bootstrap() {
       const allowed = [
         'http://localhost:3000',
         'http://localhost:3001',
-        'https://nexabank-web.vercel.app',
+        'https://securesphere-web.vercel.app',
         process.env.FRONTEND_URL,
       ].filter(Boolean) as string[];
 
@@ -66,7 +66,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   const config = new DocumentBuilder()
-    .setTitle('NexaBank API')
+    .setTitle('Securesphere API')
     .setDescription('Professional USA Banking System — Full API Documentation')
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
@@ -89,7 +89,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  console.log(`\n🏦 NexaBank API running → http://localhost:${port}/api/v1`);
+  console.log(`\n🏦 Securesphere API running → http://localhost:${port}/api/v1`);
   console.log(`📚 Swagger Docs       → http://localhost:${port}/api/docs\n`);
 }
 bootstrap();

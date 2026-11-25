@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "NexaBank — Auth (Register, Login, Forgot/Reset Password)",
+    "name": "Securesphere — Auth (Register, Login, Forgot/Reset Password)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -37,7 +37,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"username\": \"john_nexabank\",\n  \"email\": \"john.nexabank@gmail.com\",\n  \"password\": \"SecurePass@123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+12125551234\",\n  \"dateOfBirth\": \"1990-05-15\"\n}"
+          "raw": "{\n  \"username\": \"john_Securesphere\",\n  \"email\": \"john.Securesphere@gmail.com\",\n  \"password\": \"SecurePass@123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+12125551234\",\n  \"dateOfBirth\": \"1990-05-15\"\n}"
         },
         "url": "{{base}}/auth/register"
       }
@@ -54,7 +54,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"username\": \"admin_jane\",\n  \"email\": \"jane.admin@nexabank.com\",\n  \"password\": \"AdminPass@123\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Admin\",\n  \"phoneNumber\": \"+12125559876\",\n  \"adminSecretKey\": \"NEXABANK_ADMIN_SECRET_2024_CHANGE_THIS_IN_PRODUCTION\"\n}"
+          "raw": "{\n  \"username\": \"admin_jane\",\n  \"email\": \"jane.admin@Securesphere.com\",\n  \"password\": \"AdminPass@123\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Admin\",\n  \"phoneNumber\": \"+12125559876\",\n  \"adminSecretKey\": \"Securesphere_ADMIN_SECRET_2024_CHANGE_THIS_IN_PRODUCTION\"\n}"
         },
         "url": "{{base}}/auth/register/admin"
       }
@@ -78,7 +78,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"john.nexabank@gmail.com\"\n}"
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"email\": \"john.Securesphere@gmail.com\"\n}"
         },
         "url": "{{base}}/auth/resend-otp"
       }
@@ -99,7 +99,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"username\": \"john_nexabank\",\n  \"password\": \"SecurePass@123\",\n  \"captchaCode\": \"{{captcha}}\",\n  \"captchaToken\": \"{{captcha}}\"\n}"
+          "raw": "{\n  \"username\": \"john_Securesphere\",\n  \"password\": \"SecurePass@123\",\n  \"captchaCode\": \"{{captcha}}\",\n  \"captchaToken\": \"{{captcha}}\"\n}"
         },
         "url": "{{base}}/auth/login"
       }
@@ -166,7 +166,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.nexabank@gmail.com\"\n}"
+              "raw": "{\n  \"email\": \"john.Securesphere@gmail.com\"\n}"
             },
             "url": "{{base}}/auth/forgot-password"
           }
@@ -184,7 +184,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.nexabank@gmail.com\",\n  \"otp\": \"PASTE_OTP_FROM_EMAIL\"\n}"
+              "raw": "{\n  \"email\": \"john.Securesphere@gmail.com\",\n  \"otp\": \"PASTE_OTP_FROM_EMAIL\"\n}"
             },
             "url": "{{base}}/auth/forgot-password/verify-otp"
           }
@@ -201,7 +201,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"john.nexabank@gmail.com\",\n  \"otp\": \"PASTE_SAME_OTP_HERE\",\n  \"newPassword\": \"NewSecurePass@456\",\n  \"confirmPassword\": \"NewSecurePass@456\"\n}"
+              "raw": "{\n  \"email\": \"john.Securesphere@gmail.com\",\n  \"otp\": \"PASTE_SAME_OTP_HERE\",\n  \"newPassword\": \"NewSecurePass@456\",\n  \"confirmPassword\": \"NewSecurePass@456\"\n}"
             },
             "url": "{{base}}/auth/reset-password"
           }
