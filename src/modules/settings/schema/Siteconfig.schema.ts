@@ -29,7 +29,7 @@ export class NavPage {
 export class SiteConfig {
   @Prop({ default: true, unique: true }) singleton: boolean;
 
-  @Prop({ default: 'NexaBank'  }) bankName: string;
+  @Prop({ default: 'Securesphere'  }) bankName: string;
   @Prop({ default: ''          }) bankTagline: string;
   @Prop({ default: ''          }) logoUrl: string;     
   @Prop({ default: ''          }) faviconUrl: string;   

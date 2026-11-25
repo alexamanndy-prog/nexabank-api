@@ -338,7 +338,7 @@ toggleTransferBlock(
 
   // ── Crypto Addresses ──────────────────────────────────────────
   @Get('crypto/addresses')
-  @ApiOperation({ summary: 'Get all NexaBank crypto deposit addresses' })
+  @ApiOperation({ summary: 'Get all Securesphere crypto deposit addresses' })
   getCryptoAddresses() { return this.adminService.getAllCryptoAddresses(); }
 
   @Put('crypto/addresses')

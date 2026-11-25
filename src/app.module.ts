@@ -31,7 +31,7 @@ import { SettingsModule } from './modules/settings/settings.module';
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
         uri: config.get<string>('MONGODB_URI'),
-        dbName: 'nexabank',
+        dbName: 'Securesphere',
       }),
       inject: [ConfigService],
     }),

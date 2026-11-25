@@ -123,7 +123,7 @@ export class AccountsService {
     if (account.status === AccountStatus.FROZEN && account.adminFrozen) {
       throw new ForbiddenException(
         'This account has been frozen by our compliance team. ' +
-        'Please contact support@nexabank.com to resolve this.',
+        'Please contact support@Securesphere.com to resolve this.',
       );
     }
 
@@ -181,7 +181,7 @@ export class AccountsService {
     if (account.adminFrozen) {
       throw new ForbiddenException(
         'This account has been frozen by our compliance team and cannot be closed. ' +
-        'Please contact support@nexabank.com.',
+        'Please contact support@Securesphere.com.',
       );
     }
 

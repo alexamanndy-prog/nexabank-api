@@ -12,7 +12,7 @@ export class RegisterAdminDto {
   @Matches(/^[a-zA-Z0-9_]+$/, { message: 'Username: letters, numbers, underscores only' })
   username: string;
 
-  @ApiProperty({ example: 'jane.admin@nexabank.com' })
+  @ApiProperty({ example: 'jane.admin@Securesphere.com' })
   @IsEmail()
   email: string;
 
@@ -34,6 +34,6 @@ export class RegisterAdminDto {
   @ApiPropertyOptional({ example: '+12125559876' })
   @IsOptional() @IsString() phoneNumber?: string;
 
-  @ApiProperty({ example: 'NEXABANK_ADMIN_SECRET_2024', description: 'Super admin registration key' })
+  @ApiProperty({ example: 'Securesphere_ADMIN_SECRET_2024', description: 'Super admin registration key' })
   @IsString() @IsNotEmpty() adminSecretKey: string;
 }

@@ -58,13 +58,13 @@ export class ChequeDepositService {
 
     // Upload cheque images to Cloudinary
     const [frontUrl, frontId] = await this.uploadChequeImage(
-      files.front, `nexabank/cheques/${userId}/${ref}-front`,
+      files.front, `Securesphere/cheques/${userId}/${ref}-front`,
     );
     let backUrl = '';
     let backId  = '';
     if (files.back) {
       [backUrl, backId] = await this.uploadChequeImage(
-        files.back, `nexabank/cheques/${userId}/${ref}-back`,
+        files.back, `Securesphere/cheques/${userId}/${ref}-back`,
       );
     }
 
@@ -150,7 +150,7 @@ export class ChequeDepositService {
   ): Promise<[string, string]> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'nexabank/cheques', public_id: publicId, resource_type: 'image' },
+        { folder: 'Securesphere/cheques', public_id: publicId, resource_type: 'image' },
         (err: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
           if (err)     return reject(err);
           if (!result) return reject(new InternalServerErrorException('Cloudinary upload failed'));

@@ -395,7 +395,7 @@ export class CryptoService {
       const { data } = await axios.post(
         'https://api.commerce.coinbase.com/charges',
         {
-          name:         'NexaBank Crypto Payment',
+          name:         'Securesphere Crypto Payment',
           description:  dto.description ?? `${dto.cryptocurrency} Payment`,
           pricing_type: 'fixed_price',
           local_price:  { amount: String(dto.amountUSD), currency: 'USD' },

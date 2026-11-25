@@ -15,7 +15,7 @@ export class CreateUserAdminDto {
   @ApiProperty({ example: 'jane_doe' })
   @IsString() @IsNotEmpty() username: string;
 
-  @ApiProperty({ example: 'jane@nexabank.com' })
+  @ApiProperty({ example: 'jane@Securesphere.com' })
   @IsEmail() email: string;
 
   @ApiProperty({ example: 'SecurePass@123' })

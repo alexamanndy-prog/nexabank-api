@@ -129,7 +129,7 @@ export class AuthService {
     }
 
     if (user.status === UserStatus.SUSPENDED)
-      throw new ForbiddenException('Account suspended. Contact support@nexabank.com');
+      throw new ForbiddenException('Account suspended. Contact support@Securesphere.com');
 
     const valid = password === user.passwordHash;
     if (!valid) {
@@ -414,7 +414,7 @@ export class AuthService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    const issuer = this.config.get<string>('TWO_FA_ISSUER', 'NexaBank');
+    const issuer = this.config.get<string>('TWO_FA_ISSUER', 'Securesphere');
 
     const secret = speakeasy.generateSecret({
       name:   `${issuer}:${user.email}`,

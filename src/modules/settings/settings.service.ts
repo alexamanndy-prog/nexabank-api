@@ -76,7 +76,7 @@ export class SettingsService {
 
     const url = await this.uploadToCloudinary(
       file.buffer,
-      'nexabank/branding',
+      'Securesphere/branding',
       'logo',
     );
 
@@ -95,7 +95,7 @@ export class SettingsService {
 
     const url = await this.uploadToCloudinary(
       file.buffer,
-      'nexabank/branding',
+      'Securesphere/branding',
       'favicon',
     );
 

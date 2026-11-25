@@ -10,7 +10,7 @@ export class NotificationsService {
 
   constructor(private readonly config: ConfigService) {
     this.resend = new Resend(this.config.get('RESEND_API_KEY'));
-    this.from   = `${config.get('APP_NAME', 'NexaBank')} <${config.get('RESEND_FROM_EMAIL')}>`;
+    this.from   = `${config.get('APP_NAME', 'Securesphere')} <${config.get('RESEND_FROM_EMAIL')}>`;
   }
 
   // ── OTP Email ─────────────────────────────────────────────────
@@ -25,7 +25,7 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: `NexaBank — ${subjects[purpose] ?? 'Verification Code'}`,
+      subject: `Securesphere — ${subjects[purpose] ?? 'Verification Code'}`,
       html:    this.otpTemplate(otp, subjects[purpose] ?? 'Verification'),
     });
   }
@@ -35,7 +35,7 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: 'Welcome to NexaBank 🏦',
+      subject: 'Welcome to Securesphere 🏦',
       html:    this.welcomeTemplate(firstName),
     });
   }
@@ -69,7 +69,7 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: `NexaBank — ${isDebit ? 'Debit Alert' : 'Credit Alert'} $${data.amount.toFixed(2)}`,
+      subject: `Securesphere — ${isDebit ? 'Debit Alert' : 'Credit Alert'} $${data.amount.toFixed(2)}`,
       html:    this.transactionTemplate(isDebit, data),
     });
   }
@@ -84,7 +84,7 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: `NexaBank — Loan Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      subject: `Securesphere — Loan Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
       html: this.emailWrapper(`
         <h2 style="color:#0a2342">Loan Application Update</h2>
         <p>Dear ${firstName},</p>
@@ -102,7 +102,7 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: 'NexaBank — Identity Verification Approved ✅',
+      subject: 'Securesphere — Identity Verification Approved ✅',
       html: this.emailWrapper(`
         <div style="text-align:center;margin-bottom:28px">
           <div style="width:72px;height:72px;background:#f0fdf4;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px">
@@ -123,7 +123,7 @@ export class NotificationsService {
             <li>Full cheque deposit services</li>
           </ul>
         </div>
-        <p style="color:#555">Log in to your NexaBank account to explore all available services.</p>
+        <p style="color:#555">Log in to your Securesphere account to explore all available services.</p>
         <div style="text-align:center;margin:28px 0">
           <a href="${this.config.get('FRONTEND_URL')}/dashboard"
              style="background:linear-gradient(135deg,#0a2342,#1e40af);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block">
@@ -132,7 +132,7 @@ export class NotificationsService {
         </div>
         <p style="color:#888;font-size:13px">
           If you have any questions, contact us at
-          <a href="mailto:support@nexabank.com" style="color:#3b82f6">support@nexabank.com</a>
+          <a href="mailto:support@Securesphere.com" style="color:#3b82f6">support@Securesphere.com</a>
         </p>
       `),
     });
@@ -150,8 +150,8 @@ export class NotificationsService {
       from:    this.from,
       to:      email,
       subject: isResubmit
-        ? 'NexaBank — Additional Documents Required for KYC'
-        : 'NexaBank — Identity Verification Update',
+        ? 'Securesphere — Additional Documents Required for KYC'
+        : 'Securesphere — Identity Verification Update',
       html: this.emailWrapper(`
         <div style="text-align:center;margin-bottom:28px">
           <div style="width:72px;height:72px;background:#fef2f2;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px">
@@ -193,15 +193,15 @@ export class NotificationsService {
           and we will be happy to assist you through the verification process.
         </p>
         <div style="text-align:center;margin:28px 0">
-          <a href="mailto:support@nexabank.com"
+          <a href="mailto:support@Securesphere.com"
              style="background:#0a2342;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block">
             Contact Support
           </a>
         </div>`}
         <p style="color:#888;font-size:13px">
           Questions? Email us at
-          <a href="mailto:support@nexabank.com" style="color:#3b82f6">support@nexabank.com</a>
-          or call 1-800-NEXABANK.
+          <a href="mailto:support@Securesphere.com" style="color:#3b82f6">support@Securesphere.com</a>
+          or call 1-800-Securesphere.
         </p>
       `),
     });
@@ -216,11 +216,11 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: 'NexaBank — Password Reset Request',
+      subject: 'Securesphere — Password Reset Request',
       html: this.emailWrapper(`
         <h2 style="color:#0a2342">Password Reset Request</h2>
         <p>Dear ${firstName},</p>
-        <p>We received a request to reset your NexaBank password. Use the code below:</p>
+        <p>We received a request to reset your Securesphere password. Use the code below:</p>
         <div style="background:#fef2f2;border:2px dashed #dc2626;border-radius:12px;padding:24px;text-align:center;margin:20px 0">
           <span style="font-size:48px;font-weight:800;letter-spacing:12px;color:#dc2626;font-family:monospace">${otp}</span>
         </div>
@@ -228,10 +228,10 @@ export class NotificationsService {
         <div style="background:#fff7ed;border-left:4px solid #f97316;padding:16px;border-radius:6px;margin:20px 0">
           <strong>⚠️ Security Warning:</strong><br/>
           If you did not request this password reset, please contact us immediately at
-          <a href="mailto:security@nexabank.com" style="color:#dc2626">security@nexabank.com</a>
+          <a href="mailto:security@Securesphere.com" style="color:#dc2626">security@Securesphere.com</a>
           and secure your account.
         </div>
-        <p style="color:#888;font-size:13px">Never share this code with anyone — NexaBank will never ask for it.</p>
+        <p style="color:#888;font-size:13px">Never share this code with anyone — Securesphere will never ask for it.</p>
       `),
     });
   }
@@ -245,11 +245,11 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: 'NexaBank — Your Password Has Been Changed',
+      subject: 'Securesphere — Your Password Has Been Changed',
       html: this.emailWrapper(`
         <h2 style="color:#0a2342">Password Changed Successfully</h2>
         <p>Dear ${firstName},</p>
-        <p>Your NexaBank account password was successfully changed.</p>
+        <p>Your Securesphere account password was successfully changed.</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0">
           ${this.tableRow('Date & Time', new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET')}
           ${this.tableRow('IP Address',  ip)}
@@ -257,8 +257,8 @@ export class NotificationsService {
         <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:16px;border-radius:6px;margin:20px 0">
           <strong>🚨 Was this not you?</strong><br/>
           Contact us immediately:<br/>
-          📧 <a href="mailto:security@nexabank.com" style="color:#dc2626">security@nexabank.com</a><br/>
-          📞 1-800-NEXABANK
+          📧 <a href="mailto:security@Securesphere.com" style="color:#dc2626">security@Securesphere.com</a><br/>
+          📞 1-800-Securesphere
         </div>
       `),
     });
@@ -273,16 +273,16 @@ export class NotificationsService {
     await this.resend.emails.send({
       from:    this.from,
       to:      email,
-      subject: 'NexaBank — Admin Account Created',
+      subject: 'Securesphere — Admin Account Created',
       html: this.emailWrapper(`
         <h2 style="color:#0a2342">Admin Account Created 🔐</h2>
         <p>Dear ${firstName},</p>
-        <p>An admin account has been created for you on the NexaBank system.</p>
+        <p>An admin account has been created for you on the Securesphere system.</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0">
           ${this.tableRow('Username', username)}
           ${this.tableRow('Email',    email)}
           ${this.tableRow('Role',     'Administrator')}
-          ${this.tableRow('Access',   'NexaBank Admin Panel')}
+          ${this.tableRow('Access',   'Securesphere Admin Panel')}
         </table>
         <div style="background:#f0f4ff;border-left:4px solid #0a2342;padding:16px;border-radius:6px;margin:20px 0">
           <strong>🔒 Security Recommendations:</strong>
@@ -315,14 +315,14 @@ export class NotificationsService {
       <div style="background:#f0f4ff;border:2px dashed #3b82f6;border-radius:12px;padding:24px;text-align:center;margin:20px 0">
         <span style="font-size:48px;font-weight:800;letter-spacing:12px;color:#0a2342;font-family:monospace">${otp}</span>
       </div>
-      <p style="color:#888;font-size:13px">⚠️ Never share this code with anyone — NexaBank will never ask for it.</p>
+      <p style="color:#888;font-size:13px">⚠️ Never share this code with anyone — Securesphere will never ask for it.</p>
     `);
   }
 
   private welcomeTemplate(firstName: string): string {
     return this.emailWrapper(`
       <h2 style="color:#0a2342">Welcome aboard, ${firstName}! 🎉</h2>
-      <p>Your NexaBank account has been created successfully.</p>
+      <p>Your Securesphere account has been created successfully.</p>
       <div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:16px;border-radius:6px;margin:20px 0">
         <strong>✅ FDIC Insured</strong><br/>
         Your deposits are insured up to <strong>$250,000</strong> per depositor.
@@ -389,7 +389,7 @@ export class NotificationsService {
       <div style="background:${isDebit ? '#fef2f2' : '#f0fdf4'};border-left:4px solid ${borderColor};
         padding:14px 16px;border-radius:6px;margin-top:24px;font-size:13px;color:#555">
         ${isDebit
-          ? '🔒 If you did not authorize this transaction, contact us immediately at <a href="mailto:security@nexabank.com" style="color:#dc2626">security@nexabank.com</a> or call 1-800-NEXABANK.'
+          ? '🔒 If you did not authorize this transaction, contact us immediately at <a href="mailto:security@Securesphere.com" style="color:#dc2626">security@Securesphere.com</a> or call 1-800-Securesphere.'
           : '✅ This credit has been applied to your account. Log in to view your updated balance.'
         }
       </div>
@@ -416,7 +416,7 @@ export class NotificationsService {
             <div style="display:flex;align-items:center">
               <span style="font-size:28px;margin-right:12px">🏦</span>
               <div>
-                <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:1px">NEXABANK</span><br/>
+                <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:1px">Securesphere</span><br/>
                 <span style="color:#93c5fd;font-size:11px;letter-spacing:2px">MEMBER FDIC · EST. 2024</span>
               </div>
             </div>
@@ -428,9 +428,9 @@ export class NotificationsService {
           <!-- Footer -->
           <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center">
             <p style="color:#9ca3af;font-size:11px;margin:0">
-              © ${new Date().getFullYear()} NexaBank, N.A. · Member FDIC · Equal Housing Lender<br/>
+              © ${new Date().getFullYear()} Securesphere, N.A. · Member FDIC · Equal Housing Lender<br/>
               1 Financial Plaza, New York, NY 10005 ·
-              <a href="mailto:support@nexabank.com" style="color:#3b82f6">support@nexabank.com</a>
+              <a href="mailto:support@Securesphere.com" style="color:#3b82f6">support@Securesphere.com</a>
             </p>
           </div>
         </div>

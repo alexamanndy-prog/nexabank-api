@@ -44,7 +44,7 @@ export class TransfersService {
     if (userRecord?.transferBlocked) {
       throw new ForbiddenException(
         'Your account has been restricted from making transfers. ' +
-        'Please contact support at support@nexabank.com for assistance.',
+        'Please contact support at support@Securesphere.com for assistance.',
       );
     }
 
@@ -55,7 +55,7 @@ export class TransfersService {
     if (!account) throw new NotFoundException('Source account not found');
     if (account.status === 'frozen') {
       throw new ForbiddenException(
-        'This account has been frozen. Please contact support@nexabank.com to resolve this.',
+        'This account has been frozen. Please contact support@Securesphere.com to resolve this.',
       );
     }
     if (account.availableBalance < payload.amount) {
@@ -230,7 +230,7 @@ export class TransfersService {
         balance:                sender.balance,
         recipientName:          dto.recipientName,
         recipientAccountNumber: recipient.accountNumber,
-        recipientBankName:      'NexaBank',
+        recipientBankName:      'Securesphere',
       }).catch(() => null);
 
       return { success: true, referenceNumber: ref, receiptUrl };
