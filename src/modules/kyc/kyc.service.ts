@@ -23,7 +23,13 @@ export class KycService {
 
   async getKycStatus(userId: string) {
     const kyc = await this.kycModel.findOne({ userId: new Types.ObjectId(userId) }).lean();
-    return kyc ?? { status: 'not_started', userId };
+    if (kyc) return kyc;
+
+    // No submission on file (e.g. user was approved manually or created by an
+    // admin with KYC skipped): fall back to the status stored on the user, so
+    // the app doesn't report "not_started" for an already-approved account.
+    const user = await this.userModel.findById(userId).select('kycStatus').lean();
+    return { status: user?.kycStatus ?? 'not_started', userId };
   }
 
   async submitKyc(userId: string, dto: {
